@@ -15,9 +15,8 @@ This plugin makes it easier to work with Bible references while using a Supernot
 
 ## Installation
 
-Download the latest `.snplg` file from the **Releases** section of this repository.
 
-Installation instructions will be provided here.
+Download the .snplg file (available at link below) into the Supernote’s MyStyle folder, then choose Settings → Apps → Plugins → Choose Installation Package and select it.
 
 ## Bible Text
 
