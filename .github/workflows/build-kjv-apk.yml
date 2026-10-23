@@ -1,0 +1,53 @@
+name: Build KJV App APK
+on:
+  push:
+    branches: [android-apk-build]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Bundle verified offline KJV corpus
+        working-directory: android-app
+        run: |
+          mkdir -p app/src/main/assets
+          python - <<'PY'
+          import json, urllib.request
+          url='https://raw.githubusercontent.com/midvash/bible-data/main/versions/en/kjv/kjv.json'
+          with urllib.request.urlopen(url) as r:
+              src=json.load(r)
+          books=src['books']
+          out=[]
+          verse_count=0
+          for b in books:
+              chapters=[]
+              for ci,ch in enumerate(b['chapters'],1):
+                  verses=[]
+                  for vi,v in enumerate(ch['verses'],1):
+                      verses.append({'verse':str(v.get('verse',v.get('number',vi))),'text':v['text']})
+                      verse_count += 1
+                  chapters.append({'chapter':str(ch.get('chapter',ch.get('number',ci))),'verses':verses})
+              out.append({'book':b['book'],'chapters':chapters})
+          assert len(out)==66, len(out)
+          assert verse_count==31102, verse_count
+          with open('app/src/main/assets/kjv.json','w',encoding='utf-8') as f:
+              json.dump(out,f,ensure_ascii=False,separators=(',',':'))
+          print('Bundled',len(out),'books and',verse_count,'verses')
+          PY
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build debug APK
+        working-directory: android-app
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: KJV-App-v1.0.0
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk
